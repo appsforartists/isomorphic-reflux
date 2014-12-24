@@ -1,0 +1,34 @@
+{
+  "name": "isomorphic-reflux",
+  "version": "0.2.1",
+  "description": "Prototyping what `new Reflux(definitions) could look like`",
+  "main": "src/init.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "react": "0.12",
+    "reflux": "0.2"
+  },
+  "dependencies": {
+    "lazy.js": "0.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:appsforartists/isomorphic-reflux.git"
+  },
+  "keywords": [
+    "isomorphic",
+    "ambidextrous",
+    "reflux",
+    "flux"
+  ],
+  "contributors": [
+    "Brenton Simpson <bresimpson@ebay.com> (http://appsforartists.com)"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/appsforartists/isomorphic-reflux/issues"
+  },
+  "homepage": "https://github.com/appsforartists/isomorphic-reflux"
+}

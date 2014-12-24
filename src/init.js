@@ -3,68 +3,120 @@ Object.assign = Object.assign || require("react/lib/Object.assign.js");
 var Reflux    = require("reflux");
 var Lazy      = require("lazy.js");
 
-module.exports = Object.assign(
+Reflux = Object.assign(
+  /*  This is the constructor Reflux should have (but doesn't yet).
+   *
+   *  It takes a list of definitions:
+   *
+   *      var reflux = new Reflux(
+   *        {
+   *          "FirstThing":   {
+   *                            "actions":  [
+   *                                          "loadFirstThing"
+   *                                        ],
+   *
+   *                            "store":    {
+   *                                          "onLoadFirstThing":  function () {
+   *                                        …
+   *                          },
+   *
+   *          "SecondThing":  {
+   *                            …
+   *                          },
+   *        }
+   *      );
+   *
+   *  and returns a data structure:
+   *
+   *      reflux.actions.loadFirstThing
+   *      reflux.stores.FirstThing
+   *      reflux.stores.SecondThing
+   *
+   *  `actions` are automatically listened to by the store that defines them.  To make
+   *  sure stores can effectively listen to each other, creation happens in two passes:
+   *
+   *   - The first pass transforms the definitions into Stores, binding the appropriate
+   *     methods.
+   *
+   *   - The second pass calls each definition's `init` method and listens to the
+   *     actions enumerated in the definition.
+   *
+   *  Breaking it up into two passes makes the constructor incredibly simple because we
+   *  don't have to worry about dependency order - none of the actions or stores can be
+   *  depended on until after they've all been created.
+   */
+
+
   function (definitions) {
-    var reflux = {
-      "actions":  {},
-      "stores":   {}
-    };
+    this.actions = Lazy({});
+    this.stores  = {};
 
-    reflux.stores = Lazy(definitions).map(
+    Lazy(definitions).each(
       (definition, name) => {
-        var actionNames = Lazy(definition.actions).without(Object.keys(reflux.actions)).toArray();
-
-        var actions = Reflux.createActions(actionNames);
-
-        reflux.actions = Object.assign(
-          actions,
-
-          reflux.actions
+        this.actions = this.actions.assign(
+          Reflux.createActions(definition.actions)
         );
 
-        return [
-          name,
-
-          Reflux.createStore(
-            Object.assign(
-              {                 // Look up actions on reflux (rather than locally)
-                                // in case some are shared between many states.
-                "listenables":  Lazy(definition.actions).map(
-                                  actionName => [actionName, reflux.actions[actionName]]
-                                ).toObject(),
-
-                // // it would be really cool to add a `then` method here
-                // // so the store could be wrapped in Promise.resolve to get
-                // // its first value, and then stop listening automatically
-                // //
-                // // Alternatively, maybe the actions can be thenable, resolved
-                // // when the store(s) that are listening trigger.
-                // // This could be tricky when you have chained stores.
-
-                //
-                // // other wrinkles: how do you handle loading new data?  if a
-                // // store sets its state to null while it waits for data, you
-                // // need to make sure the server doesn't return prematurely
-
-                // "then":         function (callback) {
-                //                   var resolve = (...results) => {
-                //                     this.stopListeningTo(
-
-                //                     callback.apply(
-                //                   };
-
-                //                   this.listen(resolve);
-                //                 }
-              },
-              definition.store
-            )
-          )
-        ];
+        this.stores[name] = Reflux.createStore(
+          Lazy(definition.store).omit(["init", "listenables"]).toObject()
+        );
       }
-    ).toObject();
+    );
 
-    return reflux;
+    this.actions = this.actions.toObject();
+
+    Lazy(this.stores).each(
+      (store, name) => {
+        var definition = definitions[name];
+
+        if (definition.dependencies) {
+          Lazy(definition.dependencies.stores).each(
+            dependencyName => console.assert(this.stores[dependencyName], `name depends on the store ${ dependencyName }, but that isn't defined.`)
+          );
+
+          Lazy(definition.dependencies.actions).each(
+            dependencyName => console.assert(this.actions[dependencyName], `name depends on the action ${ dependencyName }, but that isn't defined.`)
+          );
+        }
+
+
+        store.parent = this;
+
+        store.init = definition.store.init;
+
+        store.listenables = Lazy(definition.actions).map(
+          actionName => [actionName, this.actions[actionName]]
+        ).toObject();
+
+        if (store.init)
+          store.init();
+
+        if (store.listenables)
+          store.listenToMany(store.listenables);
+      }
+    );
   },
 
   Reflux
 );
+
+Reflux.prototype.hydrate = function (dehydrated) {
+  Lazy(dehydrated).each(
+    (state, name) => {
+      if (this.stores[name]) {
+        this.stores[name].state = state;
+
+      } else {
+        console.warn(`reflux.hydrate couldn't find a matching store for ${ name }`);
+      }
+    }
+  );
+};
+
+Reflux.prototype.dehydrate = function () {
+  return Lazy(this.stores).map(
+    (store, name) => [name, store.state]
+  ).toObject();
+};
+
+module.exports = Reflux;
