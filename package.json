@@ -1,6 +1,6 @@
 {
   "name": "isomorphic-reflux",
-  "version": "0.2.1",
+  "version": "0.2.1.1",
   "description": "Prototyping what `new Reflux(definitions) could look like`",
   "main": "src/init.js",
   "scripts": {

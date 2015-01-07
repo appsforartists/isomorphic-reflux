@@ -71,11 +71,11 @@ Reflux = Object.assign(
 
         if (definition.dependencies) {
           Lazy(definition.dependencies.stores).each(
-            dependencyName => console.assert(this.stores[dependencyName], `name depends on the store ${ dependencyName }, but that isn't defined.`)
+            dependencyName => console.assert(this.stores[dependencyName], `${ name } depends on the store ${ dependencyName }, but that isn't defined.`)
           );
 
           Lazy(definition.dependencies.actions).each(
-            dependencyName => console.assert(this.actions[dependencyName], `name depends on the action ${ dependencyName }, but that isn't defined.`)
+            dependencyName => console.assert(this.actions[dependencyName], `${ name } depends on the action ${ dependencyName }, but that isn't defined.`)
           );
         }
 
