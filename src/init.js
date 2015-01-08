@@ -53,9 +53,13 @@ Reflux = Object.assign(
 
     Lazy(definitions).each(
       (definition, name) => {
-        this.actions = this.actions.assign(
-          Reflux.createActions(definition.actions)
-        );
+        if (definition.actions) {
+          this.actions = this.actions.assign(
+            Reflux.createActions(definition.actions)
+          );
+        }
+
+        console.assert(definition.store, "A Reflux definition must contain a `store`.");
 
         this.stores[name] = Reflux.createStore(
           Lazy(definition.store).omit(["init", "listenables"]).toObject()
