@@ -97,6 +97,9 @@ Reflux = Object.assign(
 
         if (store.listenables)
           store.listenToMany(store.listenables);
+
+        store.hydrate   = store.hydrate   || (value => value);
+        store.dehydrate = store.dehydrate || (value => value);
       }
     );
   },
@@ -108,7 +111,7 @@ Reflux.prototype.hydrate = function (dehydrated) {
   Lazy(dehydrated).each(
     (state, name) => {
       if (this.stores[name]) {
-        this.stores[name].state = state;
+        this.stores[name].state = this.stores[name].hydrate(state);
 
       } else {
         console.warn(`reflux.hydrate couldn't find a matching store for ${ name }`);
@@ -119,7 +122,7 @@ Reflux.prototype.hydrate = function (dehydrated) {
 
 Reflux.prototype.dehydrate = function () {
   return Lazy(this.stores).map(
-    (store, name) => [name, store.state]
+    (store, name) => [name, store.dehydrate(store.state)]
   ).toObject();
 };
 
